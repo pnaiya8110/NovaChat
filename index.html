@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title> NovaChat </title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* Animated moving gradient background */
+    body {
+      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(-45deg, #df82ea, #ace3ee,#ea9b9b, #ecbe8d);
+      background-size: 400% 400%;
+      animation: bgMove 10s ease infinite;
+    }
+
+    @keyframes bgMove {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Main chat card */
+    #card {
+      width: 400px;
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.35);
+      background: #fff;
+    }
+
+    /* ── HEADER ── */
+    #header {
+      background: linear-gradient(135deg, #4b488e, #353334);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      border: 2px solid rgba(255,255,255,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .bot-name { font-size: 16px; font-weight: 600; color: #fff; }
+
+    .bot-status {
+      font-size: 12px;
+      color: rgba(255,255,255,0.85);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 2px;
+    }
+
+    /* Pulsing online dot */
+    .dot {
+      width: 8px; height: 8px;
+      background: #69ff9c;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { transform: scale(1);   opacity: 1; }
+      50%      { transform: scale(1.5); opacity: 0.5; }
+    }
+
+    /* Header right buttons */
+    .hicons { margin-left: auto; display: flex; gap: 8px; }
+    .hicon {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      border: none;
+    }
+    .hicon:hover { background: rgba(255,255,255,0.35); }
+
+    /* ── CHAT AREA ── */
+    #chat-box {
+      height: 340px;
+      overflow-y: auto;
+      padding: 16px 14px;
+      background: #f4f5fb;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #ccc transparent;
+    }
+
+    /* Date label in the middle */
+    .divider {
+      text-align: center;
+      font-size: 11px;
+      color: #aaa;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: #ddd;
+    }
+
+    /* Each message row (avatar + bubble) */
+    .msg-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 7px;
+    }
+
+    /* User row flips to right side */
+    .msg-row.user { flex-direction: row-reverse; }
+
+    /* Small bot avatar */
+    .mini-av {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4b488e, #353334);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* Bubble */
+    .bubble {
+      max-width: 65%;
+      padding: 10px 14px;
+      border-radius: 18px;
+      font-size: 13.5px;
+      line-height: 1.55;
+      word-break: break-word;
+      animation: popIn 0.22s ease;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.85) translateY(8px); }
+      to   { opacity: 1; transform: scale(1)    translateY(0);   }
+    }
+
+    /* User bubble - purple, tail bottom-right */
+    .msg-row.user .bubble {
+      background: linear-gradient(135deg,#4b488e, #353334);
+      color: white;
+      border-radius: 18px 18px 4px 18px;
+    }
+
+    /* Bot bubble - white, tail bottom-left */
+    .msg-row.bot .bubble {
+      background: #fff;
+      color: #333;
+      border: 1px solid #e8e7f8;
+      border-radius: 18px 18px 18px 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    /* Timestamp under each bubble */
+    .bwrap { display: flex; flex-direction: column; gap: 3px; }
+    .msg-row.user .bwrap { align-items: flex-end; }
+    .msg-row.bot  .bwrap { align-items: flex-start; }
+
+    .ts {
+      font-size: 10px;
+      color: #bbb;
+      padding: 0 4px;
+    }
+
+    /* ── TYPING DOTS ── */
+    #typing {
+      display: none;
+      align-items: flex-end;
+      gap: 7px;
+    }
+    #typing.show { display: flex; animation: popIn 0.22s ease; }
+
+    .typing-bubble {
+      background: #fff;
+      border: 1px solid #e8e7f8;
+      border-radius: 18px 18px 18px 4px;
+      padding: 11px 16px;
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    }
+
+    .d {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #c0bfe0;
+      animation: bop 1.2s infinite;
+    }
+    .d:nth-child(2) { animation-delay: 0.2s; }
+    .d:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bop {
+      0%,60%,100% { transform: translateY(0); }
+      30%          { transform: translateY(-7px); }
+    }
+
+    /* ── CHIPS ── */
+    #chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 10px 14px;
+      background: #f4f5fb;
+      border-top: 1px solid #ece9f8;
+    }
+
+    .chip {
+      font-family: 'Poppins', sans-serif;
+      font-size: 12px;
+      padding: 5px 13px;
+      border-radius: 20px;
+      border: 1.5px solid #c5c3e8;
+      background: white;
+      color: #6c63ff;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chip:hover {
+      background: linear-gradient(135deg,#4b488e, #353334);
+      color: white;
+      border-color: transparent;
+    }
+
+    /* ── INPUT ROW ── */
+    #input-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 12px 14px;
+      background: white;
+      border-top: 1px solid #ece9f8;
+    }
+
+    #user-input {
+      flex: 1;
+      font-family: 'Poppins', sans-serif;
+      font-size: 13.5px;
+      padding: 10px 16px;
+      border: 1.5px solid #e0dff5;
+      border-radius: 22px;
+      background: #f4f5fb;
+      outline: none;
+      color: #333;
+      transition: all 0.2s;
+    }
+
+    #user-input::placeholder { color: #bbb; }
+
+    #user-input:focus {
+      border-color: #6c63ff;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+
+    /* Send button */
+    #send-btn {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4b488e, #353334);
+      border: none;
+      color: white;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    #send-btn:hover  { opacity: 0.85; }
+    #send-btn:active { transform: scale(0.91); }
+
+  </style>
+</head>
+<body>
+
+<div id="card">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="avatar">🤖</div>
+    <div>
+      <div class="bot-name">NovaChat</div>
+      <div class="bot-status"><span class="dot"></span> Online</div>
+    </div>
+    <div class="hicons">
+      <button class="hicon" title="Search">🔍</button>
+      <button class="hicon" title="More">⋯</button>
+    </div>
+  </div>
+
+  <!-- CHAT MESSAGES -->
+  <div id="chat-box">
+
+    <!-- Date divider -->
+    <div class="divider">Today</div>
+
+    <!-- First bot message -->
+    <div class="msg-row bot">
+      <div class="mini-av">🤖</div>
+      <div class="bwrap">
+        <div class="bubble">Hey there! I'm SimpleBot 👋<br>How can I help you today?</div>
+        <div class="ts" id="init-ts"></div>
+      </div>
+    </div>
+
+    <!-- Typing indicator — JS shows/hides this -->
+    <div id="typing">
+      <div class="mini-av">🤖</div>
+      <div class="typing-bubble">
+        <div class="d"></div>
+        <div class="d"></div>
+        <div class="d"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- QUICK REPLY CHIPS -->
+  <div id="chips">
+    <button class="chip" onclick="send('Hello!')">👋 Hello</button>
+    <button class="chip" onclick="send('Tell me a joke')">😂 Joke</button>
+    <button class="chip" onclick="send('What time is it?')">🕐 Time</button>
+    <button class="chip" onclick="send('Compliment me')">🌟 Compliment</button>
+    <button class="chip" onclick="send('Help')">❓ Help</button>
+  </div>
+
+  <!-- INPUT ROW -->
+  <div id="input-row">
+    <input id="user-input" type="text" placeholder="Type a message..." autocomplete="off" maxlength="200"/>
+    <button id="send-btn" onclick="send()" title="Send">➤</button>
+  </div>
+
+</div>
+
+<script>
+
+  var box     = document.getElementById('chat-box');
+  var typing  = document.getElementById('typing');
+  var input   = document.getElementById('user-input');
+
+  // Show time on greeting
+  document.getElementById('init-ts').textContent = now();
+
+  // Get current time as "10:42 AM"
+  function now() {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  // Scroll chat to bottom
+  function scrollDown() {
+    box.scrollTop = box.scrollHeight;
+  }
+
+  // Add a message bubble to the chat
+  function addMsg(text, who) {
+    var row = document.createElement('div');
+    row.className = 'msg-row ' + who;
+
+    if (who === 'bot') {
+      // Bot: small avatar on the left
+      var av = document.createElement('div');
+      av.className = 'mini-av';
+      av.textContent = '🤖';
+      row.appendChild(av);
+    }
+
+    // Bubble + timestamp wrapper
+    var wrap = document.createElement('div');
+    wrap.className = 'bwrap';
+
+    var bub = document.createElement('div');
+    bub.className = 'bubble';
+    bub.innerHTML = text;   // innerHTML so <br> works
+
+    var ts = document.createElement('div');
+    ts.className = 'ts';
+    ts.textContent = now();
+
+    wrap.appendChild(bub);
+    wrap.appendChild(ts);
+    row.appendChild(wrap);
+
+    // Insert before the typing indicator so dots stay at bottom
+    box.insertBefore(row, typing);
+    scrollDown();
+  }
+
+  // Bot reply logic using simple if-else
+  function getReply(msg) {
+    msg = msg.toLowerCase();
+
+    if (msg.includes('hello') || msg.includes('hi') || msg.includes('hey')) {
+      return 'Hi there! Great to meet you! 😊';
+
+    } else if (msg.includes('how are you')) {
+      return "I'm doing awesome, thanks for asking! 💜";
+
+    } else if (msg.includes('joke')) {
+      var jokes = [
+        'Why do programmers prefer dark mode?<br>Because light attracts bugs! 🐛',
+        'Why did the computer go to the doctor?<br>It had a virus! 💉',
+        "Why do Java devs wear glasses?<br>Because they don't C#! 👓"
+      ];
+      return jokes[Math.floor(Math.random() * jokes.length)];
+
+    } else if (msg.includes('compliment')) {
+      return 'You are amazing for learning to code! Keep it up! 🌟';
+
+    } else if (msg.includes('time')) {
+      return '🕐 Current time: <strong>' + new Date().toLocaleTimeString() + '</strong>';
+
+    } else if (msg.includes('date') || msg.includes('today')) {
+      return '📅 Today is: <strong>' + new Date().toDateString() + '</strong>';
+
+    } else if (msg.includes('name')) {
+      return "I'm SimpleBot — built with HTML, CSS & JS! 🤖";
+
+    } else if (msg.includes('bye') || msg.includes('goodbye')) {
+      return 'Goodbye! Come back anytime! 👋';
+
+    } else if (msg.includes('thank')) {
+      return "You're welcome! Happy to help 😊";
+
+    } else if (msg.includes('help')) {
+      return 'Try: hello, joke, time, date, compliment, bye!';
+
+    } else if (msg.includes('+')) {
+      // Simple addition e.g. "5 + 3"
+      var parts = msg.split('+');
+      var a = parseFloat(parts[0]);
+      var b = parseFloat(parts[1]);
+      if (!isNaN(a) && !isNaN(b)) return a + ' + ' + b + ' = <strong>' + (a + b) + '</strong> ✅';
+    }
+
+    return "Hmm, I didn't get that. Type <strong>help</strong> to see what I know!";
+  }
+
+  // Main send function — called by button, chips, and Enter key
+  function send(chipText) {
+    var text = chipText || input.value.trim();
+    if (!text) return;
+
+    addMsg(text, 'user');  // Show user message
+    input.value = '';       // Clear input
+
+    // Show typing dots
+    typing.classList.add('show');
+    scrollDown();
+
+    // After 700ms, hide dots and show bot reply
+    setTimeout(function () {
+      typing.classList.remove('show');
+      addMsg(getReply(text), 'bot');
+    }, 700);
+  }
+
+  // Send on Enter key press
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') send();
+  });
+
+</script>
+</body>
+</html>
